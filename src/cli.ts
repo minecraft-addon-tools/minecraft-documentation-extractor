@@ -31,7 +31,7 @@ if (args.length === 0 || args.length > 2) {
         const documentation = await MinecraftScriptDocumentation.fromFile(args[0]);
         const output = JSON.stringify(documentation, undefined, 2);
         if (args.length === 2) {
-            await fs.promises.writeFile(args[1], output, "utf-8");
+            await fs.promises.writeFile(args[1], output, "utf8");
         } else {
             console.log(output);
         }
