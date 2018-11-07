@@ -1,6 +1,6 @@
 {
   "name": "minecraft-documentation-extractor",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Extracts minecraft documentation from HTML files",
   "main": "out/index.js",
   "types": "out/index.d.ts",
@@ -18,10 +18,10 @@
   "repository": "github:minecraft-addon-tools/minecraft-documentation-extractor",
   "bugs": "https://github.com/minecraft-addon-tools/minecraft-documentation-extractor/issues",
   "dependencies": {
-    "cheerio": "^1.0.0-rc.2"
+    "cheerio": "^1.0.0-rc.2",
+    "@types/cheerio": "^0.22.9"
   },
   "devDependencies": {
-    "@types/cheerio": "^0.22.9",
     "@types/node": "^10.12.3",
     "typescript": "^3.1.6"
   }
