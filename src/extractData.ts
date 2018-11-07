@@ -17,51 +17,56 @@
  * along with minecraft-documentation-extractor.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import * as $ from "cheerio";
+
 export class Properties {
     name: string = "";
     description: string = "";
-    parameters?: HTMLTableElement;
+    parameters?: string[][];
 }
-export default function extractData(document: Document, id: string | string[], callback: (properties: Properties) => void) {
+export default function* extractData(element: Cheerio) {
 
-    if (Array.isArray(id)) {
-        for (const x of id) {
-            extractData(document, x, callback);
-        }
-        return;
-    }
-
-    const n = document.getElementById(id)!.parentElement;
-    if (!n) throw `'${id}' not found`;
-    let node: Element = n;
-
-    function next() {
-        if (!node.nextElementSibling) throw "end of file";
-        node = node.nextElementSibling;
-        return node;
-    }
-    function isHeading(text: string) {
-        return node.tagName === "H3" && node.textContent === text;
-    }
-
+    let node = element.parent();
+    const targetHeadingLevel = getHeadingLevel() + 1;
     next();
 
+    function isHeading() {
+        return node.is(":header");
+    }
+    function getHeadingLevel() {
+        if (isHeading()) return Number.parseInt(node.get(0).tagName[1]);
+        else throw "not a heading";
+    }
+    function isHeadingText(text: string) {
+        return isHeading() && getHeadingLevel() > targetHeadingLevel && node.text() === text;
+    }
+    function next() {
+        node = node.next();
+    }
+
     while (true) {
-        while (node.tagName !== "H1" && node.tagName !== "H2" || !node.hasChildNodes()) next();
-        if (node.tagName === "H1") break;
+        while (node.length !== 0 && (!isHeading() || node.is(":empty"))) next();
+        if (node.length === 0 || getHeadingLevel() < targetHeadingLevel) break;
 
         const properties = new Properties();
 
-        properties.name = node.textContent!;
-
-        properties.description = node.nextSibling!.textContent!.trim(); // text node
-        next(); // <br>
+        properties.name = node.text();
         next();
-        if (isHeading("Parameters")) { // <h4>Parameters</h4>
-            properties.parameters = next() as HTMLTableElement; // <table>...</table>
+
+        properties.description = node.get(0).previousSibling.nodeValue.trim(); // text node <br>
+        next();
+        while (node.is("br")) {
+            properties.description += "\n" + node.get(0).previousSibling.nodeValue.trim();
             next();
         }
 
-        callback(properties);
+        if (isHeadingText("Parameters")) { // <h4>Parameters</h4>
+            next();
+            const rows = node.find("tr").slice(1).get(); // <table>...</table>
+            properties.parameters = rows.map(r => $(r).find("td").get().map(c => $(c).text()));
+            next();
+        }
+
+        yield properties;
     }
 }

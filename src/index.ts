@@ -17,11 +17,16 @@
  * along with minecraft-documentation-extractor.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio";
+import * as fs from "fs";
 import extractData from "./extractData";
 
 export interface MinecraftScriptDocumentation {
     components: MinecraftScriptDocumentation.Component[];
+    events: {
+        client: { listening: MinecraftScriptDocumentation.Event[], triggerable: MinecraftScriptDocumentation.Event[] },
+        server: { listening: MinecraftScriptDocumentation.Event[], triggerable: MinecraftScriptDocumentation.Event[] }
+    };
 }
 
 export namespace MinecraftScriptDocumentation {
@@ -30,39 +35,62 @@ export namespace MinecraftScriptDocumentation {
         description: string;
         parameters: Parameter[];
     }
+    export interface Event {
+        name: string;
+        description: string;
+        parameters?: Parameter[];
+    }
     export interface Parameter {
         name: string;
         type: string;
         description: string;
     }
 
-    export function fromDocument(document: Document): MinecraftScriptDocumentation {
-        const components = extractComponents(document);
-        return { components };
-    }
-
     export async function fromFile(filename: string) {
-        const jsdom = await JSDOM.fromFile(filename);
-        return fromDocument(jsdom.window.document);
+        const html = await fs.promises.readFile(filename, "utf8");
+        return fromCheerio(cheerio.load(html, { normalizeWhitespace: true }));
     }
 
-    function extractComponents(document: Document): Component[] {
-        const result: Component[] = [];
-        extractData(document, "Server Components", (properties) => {
-            result.push({
+    export function fromCheerio($: CheerioStatic): MinecraftScriptDocumentation {
+        const result: MinecraftScriptDocumentation = {
+            components: [],
+            events: {
+                client: { listening: [], triggerable: [] },
+                server: { listening: [], triggerable: [] }
+            }
+        };
+        for (const properties of extractData($("#Server\\ Components"))) {
+            result.components.push({
                 name: properties.name,
                 description: properties.description,
-                parameters: Array.from(properties.parameters!.rows).slice(1).map(row => {
-                    return {
-                        name: row.cells[0].textContent!,
-                        type: row.cells[1].textContent!,
-                        description: row.cells[3].textContent!
-                    };
-                })
+                parameters: properties.parameters!.map(row => ({
+                    name: row[0],
+                    type: row[1],
+                    description: row[3]
+                }))
             });
-
-        });
+        }
+        extractEvents($(":has(#Client\\ Events) ~ * > #Listening\\ Events").first(), result.events.client.listening);
+        extractEvents($(":has(#Client\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.client.triggerable);
+        extractEvents($(":has(#Server\\ Events) ~ * > #Listening\\ Events").first(), result.events.server.listening);
+        extractEvents($(":has(#Server\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.server.triggerable);
         return result;
-    };
+    }
+
+    function extractEvents(element: Cheerio, result: Event[]) {
+        for (const properties of extractData(element)) {
+            const event: Event = {
+                name: properties.name,
+                description: properties.description,
+            };
+            if (properties.parameters)
+                event.parameters = properties.parameters.map(row => ({
+                    name: row[0],
+                    type: row[1],
+                    description: row[3]
+                }));
+            result.push(event);
+        }
+    }
 }
 
