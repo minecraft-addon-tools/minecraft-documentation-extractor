@@ -87,7 +87,7 @@ export namespace MinecraftScriptDocumentation {
                 event.parameters = properties.parameters.map(row => ({
                     name: row[0],
                     type: row[1],
-                    description: row[3]
+                    description: row[3] || row[2] // default value may be missing
                 }));
             result.push(event);
         }
