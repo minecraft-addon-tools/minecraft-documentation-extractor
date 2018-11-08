@@ -62,7 +62,7 @@ export default function* extractData(element: Cheerio) {
 
         if (isHeadingText("Parameters")) { // <h4>Parameters</h4>
             next();
-            const rows = node.find("tr").slice(1).get(); // <table>...</table>
+            const rows = node.children("tbody").children("tr").slice(1).get(); // <table>...</table>
             properties.parameters = rows.map(r => $(r).children("td").get().map(c => $(c).text()));
             next();
         }
