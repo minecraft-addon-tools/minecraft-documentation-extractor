@@ -19,7 +19,18 @@
 
 import * as cheerio from "cheerio";
 import * as fs from "fs";
-import { extractData, Table } from "./extractData";
+import { extractData, Table, Properties } from "./extractData";
+
+export interface Component {
+    name: string;
+    description: string;
+    parameters?: Parameter[];
+}
+export interface Event {
+    name: string;
+    description: string;
+    parameters?: Parameter[];
+}
 
 export interface Parameter {
     name: string;
@@ -29,25 +40,14 @@ export interface Parameter {
 }
 
 export interface MinecraftScriptDocumentation {
-    components: MinecraftScriptDocumentation.Component[];
+    components: Component[];
     events: {
-        client: { listening: MinecraftScriptDocumentation.Event[], triggerable: MinecraftScriptDocumentation.Event[] },
-        server: { listening: MinecraftScriptDocumentation.Event[], triggerable: MinecraftScriptDocumentation.Event[] }
+        client: { listening: Event[], triggerable: Event[] },
+        server: { listening: Event[], triggerable: Event[] }
     };
 }
 
 export namespace MinecraftScriptDocumentation {
-    export interface Component {
-        name: string;
-        description: string;
-        parameters: Parameter[];
-    }
-    export interface Event {
-        name: string;
-        description: string;
-        parameters?: Parameter[];
-    }
-
     export async function fromFile(filename: string) {
         return fromCheerio(await cheerioFromFile(filename));
     }
@@ -61,11 +61,7 @@ export namespace MinecraftScriptDocumentation {
             }
         };
         for (const properties of extractData($("#Server\\ Components"))) {
-            result.components.push({
-                name: properties.name,
-                description: properties.description,
-                parameters: extractParameters(properties.parameters!)
-            });
+            result.components.push(extractComponent(properties));
         }
         extractEvents($(":has(#Client\\ Events) ~ * > #Listening\\ Events").first(), result.events.client.listening);
         extractEvents($(":has(#Client\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.client.triggerable);
@@ -88,33 +84,31 @@ export namespace MinecraftScriptDocumentation {
 }
 
 export interface MinecraftAddonDocumentation {
-    components: MinecraftAddonDocumentation.Component[];
+    properties: Component[];
+    components: Component[];
+    aiGoals: Component[];
 }
 
 export namespace MinecraftAddonDocumentation {
-    export interface Component {
-        name: string;
-        description: string;
-        parameters?: Parameter[];
-    }
-
     export async function fromFile(filename: string) {
         return fromCheerio(await cheerioFromFile(filename));
     }
 
     export function fromCheerio($: CheerioStatic): MinecraftAddonDocumentation {
         const result: MinecraftAddonDocumentation = {
-            components: []
+            properties: [],
+            components: [],
+            aiGoals: []
         };
         const topLevelHeadings = new Set($(":has(#Index) + table th").get().map(x => $(x).text()));
+        for (const properties of extractData($("#Properties"), topLevelHeadings)) {
+            result.properties.push(extractComponent(properties));
+        }
         for (const properties of extractData($("#Components"), topLevelHeadings)) {
-            const component: Component = {
-                name: properties.name,
-                description: properties.description
-            };
-            if (properties.parameters)
-                component.parameters = extractParameters(properties.parameters);
-            result.components.push(component);
+            result.components.push(extractComponent(properties));
+        }
+        for (const properties of extractData($("#AI\\ Goals"), topLevelHeadings)) {
+            result.aiGoals.push(extractComponent(properties));
         }
         return result;
     }
@@ -136,4 +130,14 @@ function extractParameters(table: Table): Parameter[] {
             parameter.nestedParameters = extractParameters(row.nestedTable);
         return parameter;
     });
+}
+
+function extractComponent(properties: Properties): Component {
+    const component: Component = {
+        name: properties.name,
+        description: properties.description
+    };
+    if (properties.parameters)
+        component.parameters = extractParameters(properties.parameters);
+    return component;
 }
