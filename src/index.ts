@@ -21,6 +21,12 @@ import * as cheerio from "cheerio";
 import * as fs from "fs";
 import extractData from "./extractData";
 
+export interface Parameter {
+    name: string;
+    type: string;
+    description: string;
+}
+
 export interface MinecraftScriptDocumentation {
     components: MinecraftScriptDocumentation.Component[];
     events: {
@@ -39,11 +45,6 @@ export namespace MinecraftScriptDocumentation {
         name: string;
         description: string;
         parameters?: Parameter[];
-    }
-    export interface Parameter {
-        name: string;
-        type: string;
-        description: string;
     }
 
     export async function fromFile(filename: string) {
@@ -91,6 +92,44 @@ export namespace MinecraftScriptDocumentation {
                 }));
             result.push(event);
         }
+    }
+}
+
+export interface MinecraftAddonDocumentation {
+    components: MinecraftAddonDocumentation.Component[];
+}
+
+export namespace MinecraftAddonDocumentation {
+    export interface Component {
+        name: string;
+        description: string;
+        parameters?: Parameter[];
+    }
+
+    export async function fromFile(filename: string) {
+        const html = await fs.promises.readFile(filename, "utf8");
+        return fromCheerio(cheerio.load(html, { normalizeWhitespace: true }));
+    }
+
+    export function fromCheerio($: CheerioStatic): MinecraftAddonDocumentation {
+        const result: MinecraftAddonDocumentation = {
+            components: []
+        };
+        const topLevelHeadings = new Set($(":has(#Index) + table th").get().map(x => $(x).text()));
+        for (const properties of extractData($("#Components"), topLevelHeadings)) {
+            const component: Component = {
+                name: properties.name,
+                description: properties.description
+            };
+            if (properties.parameters)
+                component.parameters = properties.parameters.map(row => ({
+                    name: row[0],
+                    type: row[1],
+                    description: row[3]
+                }));
+            result.components.push(component);
+        }
+        return result;
     }
 }
 

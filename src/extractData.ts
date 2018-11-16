@@ -24,11 +24,12 @@ export class Properties {
     description: string = "";
     parameters?: string[][];
 }
-export default function* extractData(element: Cheerio) {
+export default function* extractData(element: Cheerio, topLevelHeadings?: Set<string>) {
 
     let node = element.parent();
-    const targetHeadingLevel = getHeadingLevel() + 1;
     next();
+    while (!isHeading()) next();
+    const targetHeadingLevel = getHeadingLevel();
 
     function isHeading() {
         return node.is(":header");
@@ -46,7 +47,7 @@ export default function* extractData(element: Cheerio) {
 
     while (true) {
         while (node.length !== 0 && (!isHeading() || getHeadingLevel() > targetHeadingLevel || node.is(":empty"))) next();
-        if (node.length === 0 || getHeadingLevel() < targetHeadingLevel) break;
+        if (node.length === 0 || getHeadingLevel() < targetHeadingLevel || (topLevelHeadings && topLevelHeadings.has(node.text()))) break;
 
         const properties = new Properties();
 
