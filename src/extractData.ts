@@ -19,12 +19,7 @@
 
 import * as $ from "cheerio";
 
-export class Properties {
-    name: string = "";
-    description: string = "";
-    parameters?: string[][];
-}
-export default function* extractData(element: Cheerio, topLevelHeadings?: Set<string>) {
+export function* extractData(element: Cheerio, topLevelHeadings?: Set<string>) {
 
     let node = element.parent();
     next();
@@ -63,11 +58,38 @@ export default function* extractData(element: Cheerio, topLevelHeadings?: Set<st
 
         if (isHeadingText("Parameters")) { // <h4>Parameters</h4>
             next();
-            const rows = node.children("tbody").children("tr").slice(1).get(); // <table>...</table>
-            properties.parameters = rows.map(r => $(r).children("td").get().map(c => $(c).text()));
+            properties.parameters = parseTable(node); // <table>...</table>
             next();
         }
 
         yield properties;
     }
+}
+
+function parseTable(table: Cheerio): Table {
+    const rows = table.children("tbody").children("tr").slice(1).get();
+    return rows.map(r => {
+        const row = $(r);
+        const nestedTable = row.find("table");
+        nestedTable.remove();
+        const tableRow: TableRow = {
+            columns: row.children("td").get().map(c => $(c).text().trim())
+        };
+        if (nestedTable.length === 1)
+            tableRow.nestedTable = parseTable(nestedTable);
+        return tableRow;
+    });
+}
+
+export class Properties {
+    name: string = "";
+    description: string = "";
+    parameters?: Table;
+}
+
+export type Table = TableRow[];
+
+export interface TableRow {
+    columns: string[];
+    nestedTable?: Table;
 }

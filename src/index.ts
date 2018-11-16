@@ -19,12 +19,13 @@
 
 import * as cheerio from "cheerio";
 import * as fs from "fs";
-import extractData from "./extractData";
+import { extractData, Table } from "./extractData";
 
 export interface Parameter {
     name: string;
     type: string;
     description: string;
+    nestedParameters?: Parameter[];
 }
 
 export interface MinecraftScriptDocumentation {
@@ -48,8 +49,7 @@ export namespace MinecraftScriptDocumentation {
     }
 
     export async function fromFile(filename: string) {
-        const html = await fs.promises.readFile(filename, "utf8");
-        return fromCheerio(cheerio.load(html, { normalizeWhitespace: true }));
+        return fromCheerio(await cheerioFromFile(filename));
     }
 
     export function fromCheerio($: CheerioStatic): MinecraftScriptDocumentation {
@@ -64,11 +64,7 @@ export namespace MinecraftScriptDocumentation {
             result.components.push({
                 name: properties.name,
                 description: properties.description,
-                parameters: properties.parameters!.map(row => ({
-                    name: row[0],
-                    type: row[1],
-                    description: row[3]
-                }))
+                parameters: extractParameters(properties.parameters!)
             });
         }
         extractEvents($(":has(#Client\\ Events) ~ * > #Listening\\ Events").first(), result.events.client.listening);
@@ -85,11 +81,7 @@ export namespace MinecraftScriptDocumentation {
                 description: properties.description,
             };
             if (properties.parameters)
-                event.parameters = properties.parameters.map(row => ({
-                    name: row[0],
-                    type: row[1],
-                    description: row[3] || row[2] // default value may be missing
-                }));
+                event.parameters = extractParameters(properties.parameters);
             result.push(event);
         }
     }
@@ -107,8 +99,7 @@ export namespace MinecraftAddonDocumentation {
     }
 
     export async function fromFile(filename: string) {
-        const html = await fs.promises.readFile(filename, "utf8");
-        return fromCheerio(cheerio.load(html, { normalizeWhitespace: true }));
+        return fromCheerio(await cheerioFromFile(filename));
     }
 
     export function fromCheerio($: CheerioStatic): MinecraftAddonDocumentation {
@@ -122,14 +113,27 @@ export namespace MinecraftAddonDocumentation {
                 description: properties.description
             };
             if (properties.parameters)
-                component.parameters = properties.parameters.map(row => ({
-                    name: row[0],
-                    type: row[1],
-                    description: row[3]
-                }));
+                component.parameters = extractParameters(properties.parameters);
             result.components.push(component);
         }
         return result;
     }
 }
 
+async function cheerioFromFile(filename: string) {
+    const html = await fs.promises.readFile(filename, "utf8");
+    return cheerio.load(html, { normalizeWhitespace: true });
+}
+
+function extractParameters(table: Table): Parameter[] {
+    return table.map(row => {
+        const parameter: Parameter = {
+            name: row.columns[0],
+            type: row.columns[1],
+            description: row.columns[row.columns.length - 1] // default value may be missing
+        }
+        if (row.nestedTable)
+            parameter.nestedParameters = extractParameters(row.nestedTable);
+        return parameter;
+    });
+}
