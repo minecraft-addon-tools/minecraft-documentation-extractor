@@ -28,6 +28,7 @@ export interface Component {
 }
 export interface Filter {
     name: string;
+    type: string;
     description: string;
     options?: string[];
 }
@@ -124,6 +125,7 @@ export namespace MinecraftAddonDocumentation {
             const options = row.nestedTable;
             const filter: Filter = {
                 name: properties.name,
+                type: row.cells[1],
                 description: properties.description
             };
             if (options) filter.options = options.map(x => x.cells[0]);
