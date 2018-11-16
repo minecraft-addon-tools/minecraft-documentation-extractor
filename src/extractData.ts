@@ -73,7 +73,7 @@ function parseTable(table: Cheerio): Table {
         const nestedTable = row.find("table");
         nestedTable.remove();
         const tableRow: TableRow = {
-            columns: row.children("td").get().map(c => $(c).text().trim())
+            cells: row.children("td").get().map(c => $(c).text().trim())
         };
         if (nestedTable.length === 1)
             tableRow.nestedTable = parseTable(nestedTable);
@@ -90,6 +90,6 @@ export class Properties {
 export type Table = TableRow[];
 
 export interface TableRow {
-    columns: string[];
+    cells: string[];
     nestedTable?: Table;
 }

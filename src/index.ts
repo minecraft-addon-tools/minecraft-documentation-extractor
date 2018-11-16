@@ -26,6 +26,11 @@ export interface Component {
     description: string;
     parameters?: Parameter[];
 }
+export interface Filter {
+    name: string;
+    description: string;
+    options?: string[];
+}
 export interface Event {
     name: string;
     description: string;
@@ -87,6 +92,7 @@ export interface MinecraftAddonDocumentation {
     properties: Component[];
     components: Component[];
     aiGoals: Component[];
+    filters: Filter[];
 }
 
 export namespace MinecraftAddonDocumentation {
@@ -98,7 +104,8 @@ export namespace MinecraftAddonDocumentation {
         const result: MinecraftAddonDocumentation = {
             properties: [],
             components: [],
-            aiGoals: []
+            aiGoals: [],
+            filters: []
         };
         const topLevelHeadings = new Set($(":has(#Index) + table th").get().map(x => $(x).text()));
         for (const properties of extractData($("#Properties"), topLevelHeadings)) {
@@ -109,6 +116,18 @@ export namespace MinecraftAddonDocumentation {
         }
         for (const properties of extractData($("#AI\\ Goals"), topLevelHeadings)) {
             result.aiGoals.push(extractComponent(properties));
+        }
+        for (const properties of extractData($("#Filters"), topLevelHeadings)) {
+            if (!properties.parameters) throw "filter doesn't have parameters";
+            const row = properties.parameters[properties.parameters.length - 1];
+            if (row.cells[0] !== "value") throw (row.cells[0] + " !== value");
+            const options = row.nestedTable;
+            const filter: Filter = {
+                name: properties.name,
+                description: properties.description
+            };
+            if (options) filter.options = options.map(x => x.cells[0]);
+            result.filters.push(filter);
         }
         return result;
     }
@@ -122,9 +141,9 @@ async function cheerioFromFile(filename: string) {
 function extractParameters(table: Table): Parameter[] {
     return table.map(row => {
         const parameter: Parameter = {
-            name: row.columns[0],
-            type: row.columns[1],
-            description: row.columns[row.columns.length - 1] // default value may be missing
+            name: row.cells[0],
+            type: row.cells[1],
+            description: row.cells[row.cells.length - 1] // default value may be missing
         }
         if (row.nestedTable)
             parameter.nestedParameters = extractParameters(row.nestedTable);
