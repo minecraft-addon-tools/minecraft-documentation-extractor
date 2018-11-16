@@ -35,7 +35,7 @@ if (args.length < 1 || args.length > 3 || !TYPES[args[0]]) {
         const type = TYPES[args[0]];
         const documentation = await type.fromFile(args[1]);
         const output = JSON.stringify(documentation, undefined, 2);
-        if (args.length === 2) {
+        if (args.length === 3) {
             await fs.promises.writeFile(args[2], output, "utf8");
         } else {
             console.log(output);
