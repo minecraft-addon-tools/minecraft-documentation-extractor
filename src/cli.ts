@@ -19,19 +19,24 @@
  * along with minecraft-documentation-extractor.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { MinecraftScriptDocumentation } from '.';
+import { MinecraftScriptDocumentation, MinecraftAddonDocumentation } from '.';
 import * as fs from 'fs';
+
+const TYPES: { [name: string]: { fromFile(filename: string): object } } = {
+    "script": MinecraftScriptDocumentation, "addon": MinecraftAddonDocumentation
+};
 
 const args = process.argv.slice(2);
 
-if (args.length === 0 || args.length > 2) {
-    console.log("Usage: minecraft-documentation-extractor <input_file> [output_file]");
+if (args.length < 1 || args.length > 3 || !TYPES[args[0]]) {
+    console.log("Usage: minecraft-documentation-extractor (scripting | addons) <input_file> [output_file]");
 } else {
     (async () => {
-        const documentation = await MinecraftScriptDocumentation.fromFile(args[0]);
+        const type = TYPES[args[0]];
+        const documentation = await type.fromFile(args[1]);
         const output = JSON.stringify(documentation, undefined, 2);
         if (args.length === 2) {
-            await fs.promises.writeFile(args[1], output, "utf8");
+            await fs.promises.writeFile(args[2], output, "utf8");
         } else {
             console.log(output);
         }
