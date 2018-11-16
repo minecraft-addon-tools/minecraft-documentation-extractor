@@ -23,7 +23,7 @@ import { MinecraftScriptDocumentation, MinecraftAddonDocumentation } from '.';
 import * as fs from 'fs';
 
 const TYPES: { [name: string]: { fromFile(filename: string): object } } = {
-    "script": MinecraftScriptDocumentation, "addon": MinecraftAddonDocumentation
+    "scripting": MinecraftScriptDocumentation, "addons": MinecraftAddonDocumentation
 };
 
 const args = process.argv.slice(2);
