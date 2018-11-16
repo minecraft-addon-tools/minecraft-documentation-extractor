@@ -45,7 +45,7 @@ export default function* extractData(element: Cheerio) {
     }
 
     while (true) {
-        while (node.length !== 0 && (!isHeading() || node.is(":empty"))) next();
+        while (node.length !== 0 && (!isHeading() || getHeadingLevel() > targetHeadingLevel || node.is(":empty"))) next();
         if (node.length === 0 || getHeadingLevel() < targetHeadingLevel) break;
 
         const properties = new Properties();
