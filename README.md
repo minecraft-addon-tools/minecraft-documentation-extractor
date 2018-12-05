@@ -1,7 +1,7 @@
 # minecraft-documentation-extractor
 This is a script which extracts data from minecraft addon documentation.
 
-To use this script, you need the `Documentation_Scripting.html` (or `Documentation_Addons.html`) file from the [vanilla addon files](https://aka.ms/minecraftscripting_behaviorpack).
+To use this script, you need the `Documentation_Scripting.html` (or `Documentation_Addons.html`) file from the [vanilla addon files](https://aka.ms/MinecraftBetaBehaviors).
 
 ## Using as a command line program
 First, install this script globally with:
