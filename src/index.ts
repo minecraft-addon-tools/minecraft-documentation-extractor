@@ -41,6 +41,7 @@ export interface Event {
 export interface Parameter {
     name: string;
     type: string;
+    defaultValue?: string;
     description: string;
     nestedParameters?: Parameter[];
 }
@@ -145,6 +146,7 @@ function extractParameters(table: Table): Parameter[] {
         const parameter: Parameter = {
             name: row.cells[0],
             type: row.cells[1],
+            defaultValue: row.cells.length > 3 && row.cells[2] ? row.cells[2] : undefined,
             description: row.cells[row.cells.length - 1] // default value may be missing
         }
         if (row.nestedTable)
