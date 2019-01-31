@@ -21,6 +21,13 @@ import * as cheerio from "cheerio";
 import * as fs from "fs";
 import { extractData, Table, Properties } from "./extractData";
 
+export interface Version {
+    major: number;
+    minor: number;
+    revision: number;
+    build: number;
+}
+
 export interface Component {
     name: string;
     description: string;
@@ -47,6 +54,7 @@ export interface Parameter {
 }
 
 export interface MinecraftScriptDocumentation {
+    version: Version | null;
     components: Component[];
     events: {
         client: { listening: Event[], triggerable: Event[] },
@@ -61,12 +69,20 @@ export namespace MinecraftScriptDocumentation {
 
     export function fromCheerio($: CheerioStatic): MinecraftScriptDocumentation {
         const result: MinecraftScriptDocumentation = {
+            version: null,
             components: [],
             events: {
                 client: { listening: [], triggerable: [] },
                 server: { listening: [], triggerable: [] }
             }
         };
+
+        const version = $("h1:first-of-type").first().text();
+        const capturedVersion = <any>/(?:(?<major>\d+)\.)(?:(?<minor>\d+)\.)(?:(?<revision>\d+)\.)(?<build>\d+)/.exec(version);
+        if (capturedVersion != null) {
+            result.version = capturedVersion.groups;
+        }
+
         for (const properties of extractData($("#Server\\ Components"))) {
             result.components.push(extractComponent(properties));
         }
@@ -91,6 +107,7 @@ export namespace MinecraftScriptDocumentation {
 }
 
 export interface MinecraftAddonDocumentation {
+    version: Version | null;
     properties: Component[];
     components: Component[];
     aiGoals: Component[];
@@ -104,11 +121,19 @@ export namespace MinecraftAddonDocumentation {
 
     export function fromCheerio($: CheerioStatic): MinecraftAddonDocumentation {
         const result: MinecraftAddonDocumentation = {
+            version: null,
             properties: [],
             components: [],
             aiGoals: [],
             filters: []
         };
+
+        const version = $("h1:first-of-type").first().text();
+        const capturedVersion = <any>/(?:(?<major>\d+)\.)(?:(?<minor>\d+)\.)(?:(?<revision>\d+)\.)(?<build>\d+)/.exec(version);
+        if (capturedVersion != null) {
+            result.version = capturedVersion.groups;
+        }
+
         const topLevelHeadings = new Set($(":has(#Index) + table th").get().map(x => $(x).text()));
         for (const properties of extractData($("#Properties"), topLevelHeadings)) {
             result.properties.push(extractComponent(properties));
