@@ -123,10 +123,10 @@ export namespace MinecraftAddonDocumentation {
         };
 
         const topLevelHeadings = new Set($(":has(#Index) + table th").get().map(x => $(x).text()));
-        for (const properties of extractData($("#Properties"), topLevelHeadings)) {
+        for (const properties of extractData($("h1 #Properties"), topLevelHeadings)) {
             result.properties.push(extractComponent(properties));
         }
-        for (const properties of extractData($("#Components"), topLevelHeadings)) {
+        for (const properties of extractData($("h1 #Components"), topLevelHeadings)) {
             result.components.push(extractComponent(properties));
         }
         for (const properties of extractData($("#AI\\ Goals"), topLevelHeadings)) {
