@@ -20,6 +20,7 @@
 import * as cheerio from "cheerio";
 import * as fs from "fs";
 import { extractData, Table, Properties } from "./extractData";
+import { sortComponents, sortFilters, sortEvents } from "./sort";
 
 export interface Version {
     major: number;
@@ -53,6 +54,10 @@ export interface Parameter {
     nestedParameters?: Parameter[];
 }
 
+export interface Options {
+    sort?: boolean;
+}
+
 export interface MinecraftScriptDocumentation {
     version: Version;
     components: Component[];
@@ -63,11 +68,11 @@ export interface MinecraftScriptDocumentation {
 }
 
 export namespace MinecraftScriptDocumentation {
-    export async function fromFile(filename: string) {
-        return fromCheerio(await cheerioFromFile(filename));
+    export async function fromFile(filename: string, options?: Options) {
+        return fromCheerio(await cheerioFromFile(filename), options);
     }
 
-    export function fromCheerio($: CheerioStatic): MinecraftScriptDocumentation {
+    export function fromCheerio($: CheerioStatic, options?: Options): MinecraftScriptDocumentation {
         const result: MinecraftScriptDocumentation = {
             version: getVersion($),
             components: [],
@@ -84,6 +89,15 @@ export namespace MinecraftScriptDocumentation {
         extractEvents($(":has(#Client\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.client.triggerable);
         extractEvents($(":has(#Server\\ Events) ~ * > #Listening\\ Events").first(), result.events.server.listening);
         extractEvents($(":has(#Server\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.server.triggerable);
+
+        if (options && options.sort) {
+            sortComponents(result.components);
+            sortEvents(result.events.client.listening);
+            sortEvents(result.events.client.triggerable);
+            sortEvents(result.events.server.listening);
+            sortEvents(result.events.server.triggerable);
+        }
+
         return result;
     }
 
@@ -109,11 +123,11 @@ export interface MinecraftAddonDocumentation {
 }
 
 export namespace MinecraftAddonDocumentation {
-    export async function fromFile(filename: string) {
-        return fromCheerio(await cheerioFromFile(filename));
+    export async function fromFile(filename: string, options?: Options) {
+        return fromCheerio(await cheerioFromFile(filename), options);
     }
 
-    export function fromCheerio($: CheerioStatic): MinecraftAddonDocumentation {
+    export function fromCheerio($: CheerioStatic, options?: Options): MinecraftAddonDocumentation {
         const result: MinecraftAddonDocumentation = {
             version: getVersion($),
             properties: [],
@@ -145,6 +159,14 @@ export namespace MinecraftAddonDocumentation {
             if (options) filter.options = options.map(x => x.cells[0]);
             result.filters.push(filter);
         }
+
+        if (options && options.sort) {
+            sortComponents(result.properties);
+            sortComponents(result.components);
+            sortComponents(result.aiGoals);
+            sortFilters(result.filters);
+        }
+
         return result;
     }
 }
