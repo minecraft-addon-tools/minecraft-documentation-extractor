@@ -19,26 +19,72 @@
  * along with minecraft-documentation-extractor.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { MinecraftScriptDocumentation, MinecraftAddonDocumentation } from '.';
+import { MinecraftScriptDocumentation, MinecraftAddonDocumentation, getCheerioOptions } from '.';
+import * as cheerio from "cheerio";
 import * as fs from 'fs';
 
-const TYPES: { [name: string]: { fromFile(filename: string): object } } = {
-    "scripting": MinecraftScriptDocumentation, "addons": MinecraftAddonDocumentation
-};
-
 const args = process.argv.slice(2);
+let sourceFile: string | null = null;
+let outputFile: string | null = null;
+let sort = false;
+let type: typeof MinecraftScriptDocumentation | typeof MinecraftAddonDocumentation | null = null;
+for (const arg of args) {
+    if (arg.startsWith("--")) {
+        switch (arg) {
+            case "--sort":
+                sort = true; break;
+            case "--scripting":
+                if (type) error("Multiple types specified");
+                type = MinecraftScriptDocumentation; break;
+            case "--addons":
+                if (type) error("Multiple types specified");
+                type = MinecraftAddonDocumentation; break;
+            default: error("Unknown option: " + arg);
+        }
+    } else {
+        if (!sourceFile)
+            sourceFile = arg;
+        else if (!outputFile)
+            outputFile = arg;
+        else error("Too many arguments");
+    }
+}
 
-if (args.length < 1 || args.length > 3 || !TYPES[args[0]]) {
-    console.log("Usage: minecraft-documentation-extractor (scripting | addons) <input_file> [output_file]");
+if (args.length === 0) {
+    usage();
+} else if (!sourceFile) {
+    error("No source file");
 } else {
     (async () => {
-        const type = TYPES[args[0]];
-        const documentation = await type.fromFile(args[1]);
+        const html = await fs.promises.readFile(sourceFile, "utf8");
+        const $ = cheerio.load(html, getCheerioOptions());
+        if (!type) {
+            const heading = $("h1:first-of-type").first().text();
+            if (heading.includes("SCRIPTING DOCUMENTATION"))
+                type = MinecraftScriptDocumentation;
+            else if (heading.includes("ADDONS DOCUMENTATION"))
+                type = MinecraftAddonDocumentation;
+            else {
+                console.log("Error: Couldn't determine documentation type");
+                return process.exit(2);
+            }
+        }
+        const documentation = type.fromCheerio($, { sort });
         const output = JSON.stringify(documentation, undefined, 2);
-        if (args.length === 3) {
-            await fs.promises.writeFile(args[2], output, "utf8");
+        if (outputFile) {
+            await fs.promises.writeFile(outputFile, output, "utf8");
         } else {
             console.log(output);
         }
     })();
+}
+
+function usage() {
+    console.log("Usage: minecraft-documentation-extractor [--scripting | --addons] [--sort] <input_file> [<output_file>]");
+}
+
+function error(message: string): never {
+    console.log("Error: " + message);
+    usage();
+    return process.exit(1);
 }

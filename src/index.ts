@@ -171,9 +171,12 @@ export namespace MinecraftAddonDocumentation {
     }
 }
 
+export function getCheerioOptions(): CheerioOptionsInterface {
+    return { normalizeWhitespace: true };
+}
 async function cheerioFromFile(filename: string) {
     const html = await fs.promises.readFile(filename, "utf8");
-    return cheerio.load(html, { normalizeWhitespace: true });
+    return cheerio.load(html, getCheerioOptions());
 }
 
 function extractParameters(table: Table): Parameter[] {
