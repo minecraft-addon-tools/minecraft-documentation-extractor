@@ -11,11 +11,11 @@ npm install -g minecraft-documentation-extractor
 
 You can then execute
 ```
-minecraft-documentation-extractor scripting ./Documentation_Scripting.html
+minecraft-documentation-extractor --scripting ./Documentation_Scripting.html
 ```
 to parse the `Documentation_Scripting.html` file and print the documentation in JSON format to the console. To write the output to a file `documentation.json`, do
 ```
-minecraft-documentation-extractor scripting ./Documentation_Scripting.html ./documentation.json
+minecraft-documentation-extractor --scripting ./Documentation_Scripting.html ./documentation.json
 ```
 
 ## Using as a library
