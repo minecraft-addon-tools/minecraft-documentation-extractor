@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (C) 2018 Filip Hejsek
+ * Copyright (C) 2018, 2019 Filip Hejsek
  *
  * This file is part of minecraft-documentation-extractor.
  *
