@@ -21,6 +21,7 @@ import * as cheerio from "cheerio";
 import * as fs from "fs";
 import { extractData, Table, Properties } from "./extractData";
 import { sortComponents, sortFilters, sortEvents } from "./sort";
+import { applyOverridesToDocumentation } from "./overrides";
 
 export interface Version {
     major: number;
@@ -29,33 +30,71 @@ export interface Version {
     build: number;
 }
 
+export interface ObjectType {
+    kind: "object";
+    originalType?: string;
+    fields: Field[];
+}
+
+export interface ArrayType {
+    kind: "array";
+    originalType?: string;
+    type: Type;
+}
+
+export interface UnionType {
+    kind: "union";
+    unionTypes: Type[];
+}
+
+export interface Field {
+    name: string;
+    description: string;
+    defaultValue?: string;
+    isOptional?: boolean;
+    type: Type;
+}
+
+export type Type = ObjectType | ArrayType | UnionType | string
+
+export function isWellKnownType(type?: Type): type is string {
+    return typeof type === "string";
+}
+
+export function isObjectType(type?: Type): type is ObjectType {
+    return !!type && (<any>type).kind === "object"
+}
+
+export function isUnionType(type?: Type): type is UnionType {
+    return !!type && (<any>type).kind === "union"
+}
+
+export function isArrayType(type?: Type): type is ArrayType {
+    return !!type && (<any>type).kind === "array"
+}
+
 export interface Component {
     name: string;
     description: string;
-    parameters?: Parameter[];
+    type?: Type;
 }
+
+export interface Event {
+    name: string;
+    description: string;
+    type?: Type;
+}
+
 export interface Filter {
     name: string;
     type: string;
     description: string;
     options?: string[];
 }
-export interface Event {
-    name: string;
-    description: string;
-    parameters?: Parameter[];
-}
-
-export interface Parameter {
-    name: string;
-    type: string;
-    defaultValue?: string;
-    description: string;
-    nestedParameters?: Parameter[];
-}
 
 export interface Options {
     sort?: boolean;
+    fix?: boolean;
 }
 
 export interface MinecraftScriptDocumentation {
@@ -90,6 +129,10 @@ export namespace MinecraftScriptDocumentation {
         extractEvents($(":has(#Server\\ Events) ~ * > #Listening\\ Events").first(), result.events.server.listening);
         extractEvents($(":has(#Server\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.server.triggerable);
 
+        if (options && options.fix) {
+            applyOverridesToDocumentation(result);
+        }
+
         if (options && options.sort) {
             sortComponents(result.components);
             sortEvents(result.events.client.listening);
@@ -108,7 +151,7 @@ export namespace MinecraftScriptDocumentation {
                 description: properties.description,
             };
             if (properties.parameters)
-                event.parameters = extractParameters(properties.parameters);
+                event.type = extractType(properties.parameters);
             result.push(event);
         }
     }
@@ -179,18 +222,31 @@ async function cheerioFromFile(filename: string) {
     return cheerio.load(html, getCheerioOptions());
 }
 
-function extractParameters(table: Table): Parameter[] {
-    return table.map(row => {
-        const parameter: Parameter = {
-            name: row.cells[0],
-            type: row.cells[1],
-            defaultValue: row.cells.length > 3 && row.cells[2] ? row.cells[2] : undefined,
-            description: row.cells[row.cells.length - 1] // default value may be missing
-        }
-        if (row.nestedTable)
-            parameter.nestedParameters = extractParameters(row.nestedTable);
-        return parameter;
-    });
+function extractType(table: Table): Type {
+    return <ObjectType>{
+        kind: "object",
+        fields: table.map(row => {
+            const parameter: Field = {
+                name: row.cells[0],
+                type: row.cells[1],
+                defaultValue: row.cells.length > 3 && row.cells[2] ? row.cells[2] : undefined,
+                description: row.cells[row.cells.length - 1] // default value may be missing
+            }
+
+            const arrayTypeCheck = (parameter.type || "").toString().toLocaleLowerCase();
+            if (arrayTypeCheck === "list" || arrayTypeCheck === "array") {
+                parameter.type = <ArrayType>{
+                    kind: "array",
+                    originalType: parameter.type,
+                    type: !!row.nestedTable ? extractType(row.nestedTable) : "any"
+                }
+            } else if (row.nestedTable) {
+                parameter.type = extractType(row.nestedTable);
+            }
+
+            return parameter;
+        })
+    }
 }
 
 function extractComponent(properties: Properties): Component {
@@ -199,7 +255,7 @@ function extractComponent(properties: Properties): Component {
         description: properties.description
     };
     if (properties.parameters)
-        component.parameters = extractParameters(properties.parameters);
+        component.type = extractType(properties.parameters);
     return component;
 }
 

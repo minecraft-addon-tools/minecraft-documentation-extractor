@@ -1,0 +1,360 @@
+{
+    "version": {
+        "major": 1,
+        "minor": 10,
+        "revision": 0,
+        "build": 3
+    },
+    "overrides": {
+        "component": {
+            "minecraft:damage_sensor": {
+                "isArray": true,
+                "type": {
+                    "on_damage": {
+                        "type": "Minecraft Trigger Object"
+                    }
+                }
+            },
+            "minecraft:equipment": {
+                "type": {
+                    "slot_drop_chance": {
+                        "isArray": true,
+                        "type": {
+                            "drop_chance": {
+                                "_operation": "add",
+                                "description": "The chance that the item in this slot will be dropped",
+                                "type": "Decimal"
+                            },
+                            "slot": {
+                                "_operation": "add",
+                                "description": "The slot number",
+                                "type": "Integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "minecraft:equippable": {
+                "type": {
+                    "slots": {
+                        "_operation": "add",
+                        "_comment": "It appears that 'item' is missing from the nestedParameters at runtime.",
+                        "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                        "isArray": true,
+                        "type": {
+                            "slot": {
+                                "_operation": "add",
+                                "description": "The slot number of this slot",
+                                "default": 0,
+                                "type": "Integer"
+                            },
+                            "accepted_items": {
+                                "_operation": "add",
+                                "description": "The list of items that can go in this slot",
+                                "isArray": true,
+                                "type": "String"
+                            },
+                            "on_equip": {
+                                "_operation": "add",
+                                "description": "Event to trigger when this entity is equipped with this item",
+                                "type": "Minecraft Trigger"
+                            },
+                            "on_unequip": {
+                                "_operation": "add",
+                                "description": "Event to trigger when this item is removed from this entity",
+                                "type": "Minecraft Trigger"
+                            },
+                            "interact_text": {
+                                "_operation": "add",
+                                "description": "Text to be displayed when the entity can be equipped with this item when playing with Touch-screen controls",
+                                "type": "String"
+                            }
+                        }
+                    }
+                }
+            },
+            "minecraft:healable": {
+                "type": {
+                    "filters": {
+                        "_comment": "Documentation suggests there is a filters property in the parameters, runtime disagrees.",
+                        "isOptional": true
+                    },
+                    "items": {
+                        "isArray": true,
+                        "type": {
+                            "filters": {
+                                "_comment": "Documentation suggests there is a filters property in the nestedParameters, runtime disagrees.",
+                                "isOptional": true
+                            },
+                            "effects": {
+                                "_operation": "add",
+                                "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                                "isArray": true,
+                                "type": {
+                                    "amplifier": {
+                                        "_operation": "add",
+                                        "_comment": "specific type unverified - decimal/integer?",
+                                        "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                                        "type": "Decimal"
+                                    },
+                                    "chance": {
+                                        "_operation": "add",
+                                        "_comment": "specific type unverified - decimal/integer?",
+                                        "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                                        "type": "Decimal"
+                                    },
+                                    "duration": {
+                                        "_operation": "add",
+                                        "_comment": "specific type unverified - seconds/ticks?",
+                                        "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                                        "type": "Integer"
+                                    },
+                                    "name": {
+                                        "_operation": "add",
+                                        "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                                        "type": "String"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "minecraft:interact": {
+                "isArray": true,
+                "type": {
+                    "transform_to_item": {
+                        "isOptional": true
+                    },
+                    "on_interact": {
+                        "type": "Minecraft Trigger"
+                    },
+                    "spawn_entities": {
+                        "_comment": "Verify",
+                        "isArray": true,
+                        "type": "Entity Identifier"
+                    },
+                    "play_sounds": {
+                        "_comment": "Verify",
+                        "isArray": true,
+                        "type": "Sound Identifier"
+                    }
+                }
+            },
+            "minecraft:lookat": {
+                "type": {
+                    "filters": {
+                        "isOptional": true
+                    },
+                    "look_event": {
+                        "type": "Minecraft Trigger"
+                    }
+                }
+            },
+            "minecraft:nameable": {
+                "type": {
+                    "default_trigger": {
+                        "type": "Minecraft Trigger"
+                    },
+                    "name_actions": {
+                        "isArray": true,
+                        "type": {
+                            "name_filter": {
+                                "_comment": "Mojang comment 'List of special names that will cause the events defined in 'on_named' to fire' suggests that this is probably a string?",
+                                "type": "String"
+                            },
+                            "on_named": {
+                                "type": "Minecraft Trigger"
+                            }
+                        }
+                    }
+                }
+            },
+            "minecraft:spawn_entity": {
+                "isArray": true,
+                "type": {
+                    "filters": {
+                        "isOptional": true
+                    }
+                }
+            }
+        },
+        "event": {
+            "client": {
+                "listening": {
+                    "minecraft:client_entered_world": {
+                        "_comment": "mojang provide no parameters for this event",
+                        "type": {
+                            "player": {
+                                "_operation": "add",
+                                "description": "the player entering the world",
+                                "type": "Entity JS API Object"
+                            }
+                        }
+                    },
+                    "minecraft:hit_result_changed": {
+                        "type": {
+                            "position": {
+                                "_comment": "comment in documentation mentions this could be null, it is also an object, not an array",
+                                "type": [ "Vector {x, y, z}", "null" ]
+                            }
+                        }
+                    },
+                    "minecraft:hit_result_continuous": {
+                        "type": {
+                            "position": {
+                                "_comment": "vector is an object, not an array",
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
+                    "minecraft:pick_hit_result_changed": {
+                        "type": {
+                            "position": {
+                                "_comment": "comment in documentation mentions this could be null, it is also an object, not an array",
+                                "type": [ "Vector {x, y, z}", "null" ]
+                            }
+                        }
+                    },
+                    "minecraft:pick_hit_result_continuous": {
+                        "type": {
+                            "position": {
+                                "_comment": "vector is an object, not an array",
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
+                    "minecraft:ui_event": {
+                        "_operation": "add",
+                        "_comment": "Completely missing from Mojang documentation",
+                        "description": "FIXME - UNDOCUMENTED - NO DESCRIPTION FROM MOJANG",
+                        "type": "String"
+                    }
+                },
+                "triggerable": {
+                    "minecraft:display_chat_event": {
+                        "type": "String"
+                    },
+                    "minecraft:execute_command": {
+                        "type": "String"
+                    },
+                    "minecraft:load_ui": {
+                        "_comment": "The formatting on this event is completely stuffed, we need Mojang to fix it.",
+                        "type": {
+                            "path": {
+                                "_operation": "add",
+                                "description": "The file path to the screen's HTML file",
+                                "type": "String"
+                            },
+                            "options": {
+                                "_operation": "add",
+                                "description": "You can define the following options for the screen by setting their value to true or false:",
+                                "isOptional": true,
+                                "type": {
+                                    "always_accepts_input": {
+                                        "_operation": "add",
+                                        "description": "If true, the screen will always accept and process input for as long as it is in the stack, even if other custom UI screens appear on top of it",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    },
+                                    "render_game_behind": {
+                                        "_operation": "add",
+                                        "description": "If true, the game will continue to be rendered underneath this screen",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    },
+                                    "absorbs_input": {
+                                        "_operation": "add",
+                                        "description": "If true, input will not be passed down to any other screens underneath",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    },
+                                    "is_showing_menu": {
+                                        "_operation": "add",
+                                        "description": "If true, the screen will be treated as the pause menu and the pause menu won't be allowed to show on top of this screen",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    },
+                                    "should_steal_mouse": {
+                                        "_operation": "add",
+                                        "description": "If true, the screen will capture the mouse pointer and limit its movement to the UI screen",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    },
+                                    "force_render_below": {
+                                        "_operation": "add",
+                                        "description": "If true, this screen will be rendered even if another screen is on top of it and will render over them, including the HUD",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    },
+                                    "render_only_when_topmost": {
+                                        "_operation": "add",
+                                        "description": "If true, this screen will only be rendered if it is the screen at the top of the stack",
+                                        "isOptional": true,
+                                        "type": "Boolean"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "minecraft:spawn_particle_attached_entity": {
+                        "type": {
+                            "effect": {
+                                "type": "Particle Identifier"
+                            }
+                        }
+                    },
+                    "minecraft:spawn_particle_in_world": {
+                        "type": {
+                            "effect": {
+                                "type": "Particle Identifier"
+                            }
+                        }
+                    },
+                    "minecraft:unload_ui": {
+                        "type": {
+                            "path": {
+                                "_operation": "add",
+                                "description": "The file path to the screen's HTML file",
+                                "type": "String"
+                            }
+                        }
+                    }
+                }
+            },
+            "server": {
+                "listening": {
+                    "minecraft:weather_changed": {
+                        "type": {
+                            "dimension": {
+                                "type": "Dimension Name"
+                            }
+                        }
+                    }
+                },
+                "triggerable": {
+                    "minecraft:display_chat_event": {
+                        "type": "String"
+                    },
+                    "minecraft:execute_command": {
+                        "type": "String"
+                    },
+                    "minecraft:spawn_particle_attached_entity": {
+                        "type": {
+                            "effect": {
+                                "type": "Particle Identifier"
+                            }
+                        }
+                    },
+                    "minecraft:spawn_particle_in_world": {
+                        "type": {
+                            "effect": {
+                                "type": "Particle Identifier"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

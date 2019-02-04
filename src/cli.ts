@@ -27,12 +27,15 @@ const args = process.argv.slice(2);
 let sourceFile: string | null = null;
 let outputFile: string | null = null;
 let sort = false;
+let fix = false;
 let type: typeof MinecraftScriptDocumentation | typeof MinecraftAddonDocumentation | null = null;
 for (const arg of args) {
     if (arg.startsWith("--")) {
         switch (arg) {
             case "--sort":
                 sort = true; break;
+            case "--fix":
+                fix = true; break;
             case "--scripting":
                 if (type) error("Multiple types specified");
                 type = MinecraftScriptDocumentation; break;
@@ -69,7 +72,7 @@ if (args.length === 0) {
                 return process.exit(2);
             }
         }
-        const documentation = type.fromCheerio($, { sort });
+        const documentation = type.fromCheerio($, { sort, fix });
         const output = JSON.stringify(documentation, undefined, 2);
         if (outputFile) {
             await fs.promises.writeFile(outputFile, output, "utf8");
@@ -80,7 +83,7 @@ if (args.length === 0) {
 }
 
 function usage() {
-    console.log("Usage: minecraft-documentation-extractor [--scripting | --addons] [--sort] <input_file> [<output_file>]");
+    console.log("Usage: minecraft-documentation-extractor [--scripting | --addons] [--sort] [--fix] <input_file> [<output_file>]");
 }
 
 function error(message: string): never {

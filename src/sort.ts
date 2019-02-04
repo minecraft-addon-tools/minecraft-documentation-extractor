@@ -17,26 +17,20 @@
  * along with minecraft-documentation-extractor.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Parameter, Component, Filter, Event } from "./index";
+import { Field, Component, Filter, Event, isObjectType, isArrayType, isUnionType, Type } from "./index";
 
 function sortByName(array: { name: string }[]) {
     array.sort((a, b) => a.name === b.name ? 0 : a.name < b.name ? -1 : 1);
 }
 
-function sortParameters(parameters: Parameter[]) {
+function sortParameters(parameters: Field[]) {
     sortByName(parameters);
-    parameters.forEach(p => {
-        if (p.nestedParameters)
-            sortParameters(p.nestedParameters);
-    });
+    parameters.forEach(p => sortType(p.type));
 }
 
 export function sortComponents(components: Component[]) {
     sortByName(components);
-    components.forEach(c => {
-        if (c.parameters)
-            sortParameters(c.parameters);
-    });
+    components.forEach(c => sortType(c.type));
 }
 
 export function sortFilters(filters: Filter[]) {
@@ -49,8 +43,17 @@ export function sortFilters(filters: Filter[]) {
 
 export function sortEvents(events: Event[]) {
     sortByName(events);
-    events.forEach(e => {
-        if (e.parameters)
-            sortParameters(e.parameters);
-    });
+    events.forEach(e => sortType(e.type));
+}
+
+export function sortType(type?: Type) {
+    if (isObjectType(type)) {
+        sortParameters(type.fields);
+    } else if (isArrayType(type)) {
+        sortType(type.type);
+    } else if (isUnionType(type)) {
+        for (const unionType of type.unionTypes) {
+            sortType(unionType);
+        }
+    }
 }
