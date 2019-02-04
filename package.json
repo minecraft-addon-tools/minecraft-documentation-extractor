@@ -1,13 +1,14 @@
 {
   "name": "minecraft-documentation-extractor",
-  "version": "0.2.1",
+  "version": "1.0.0-alpha",
   "description": "Extracts minecraft documentation from HTML files",
   "main": "out/index.js",
   "types": "out/index.d.ts",
   "bin": "out/cli.js",
   "files": [
     "out/*.js",
-    "out/index.d.ts"
+    "out/index.d.ts",
+    "out/type-overrides.json"
   ],
   "scripts": {
     "prepare": "tsc -p ."
