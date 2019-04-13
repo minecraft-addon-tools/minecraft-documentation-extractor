@@ -1,9 +1,9 @@
 {
     "version": {
         "major": 1,
-        "minor": 10,
+        "minor": 11,
         "revision": 0,
-        "build": 3
+        "build": 9
     },
     "overrides": {
         "component": {
@@ -196,7 +196,7 @@
                         "type": {
                             "position": {
                                 "_comment": "comment in documentation mentions this could be null, it is also an object, not an array",
-                                "type": [ "Vector {x, y, z}", "null" ]
+                                "type": ["Vector {x, y, z}", "null"]
                             }
                         }
                     },
@@ -212,7 +212,7 @@
                         "type": {
                             "position": {
                                 "_comment": "comment in documentation mentions this could be null, it is also an object, not an array",
-                                "type": [ "Vector {x, y, z}", "null" ]
+                                "type": ["Vector {x, y, z}", "null"]
                             }
                         }
                     },
@@ -233,9 +233,6 @@
                 },
                 "triggerable": {
                     "minecraft:display_chat_event": {
-                        "type": "String"
-                    },
-                    "minecraft:execute_command": {
                         "type": "String"
                     },
                     "minecraft:load_ui": {
