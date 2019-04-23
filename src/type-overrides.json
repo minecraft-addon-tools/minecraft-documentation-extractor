@@ -1,12 +1,16 @@
 {
     "version": {
         "major": 1,
-        "minor": 11,
+        "minor": 12,
         "revision": 0,
-        "build": 9
+        "build": 2
     },
     "overrides": {
         "component": {
+            "minecraft:armor_container": {
+                "isArray": true,
+                "type": "ItemStack JS API Object"
+            },
             "minecraft:damage_sensor": {
                 "isArray": true,
                 "type": {
@@ -73,6 +77,10 @@
                     }
                 }
             },
+            "minecraft:hand_container": {
+                "isArray": true,
+                "type": "ItemStack JS API Object"
+            },
             "minecraft:healable": {
                 "type": {
                     "filters": {
@@ -120,6 +128,10 @@
                     }
                 }
             },
+            "minecraft:hotbar_container": {
+                "isArray": true,
+                "type": "ItemStack JS API Object"
+            },
             "minecraft:interact": {
                 "isArray": true,
                 "type": {
@@ -140,6 +152,10 @@
                         "type": "Sound Identifier"
                     }
                 }
+            },
+            "minecraft:inventory_container": {
+                "isArray": true,
+                "type": "ItemStack JS API Object"
             },
             "minecraft:lookat": {
                 "type": {
@@ -232,9 +248,6 @@
                     }
                 },
                 "triggerable": {
-                    "minecraft:display_chat_event": {
-                        "type": "String"
-                    },
                     "minecraft:load_ui": {
                         "_comment": "The formatting on this event is completely stuffed, we need Mojang to fix it.",
                         "type": {
@@ -321,6 +334,44 @@
             },
             "server": {
                 "listening": {
+                    "minecraft:block_destruction_started": {
+                        "type": {
+                            "block_position": {
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
+                    "minecraft:block_destruction_stopped": {
+                        "type": {
+                            "block_position": {
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
+                    "minecraft:piston_moved_block": {
+                        "type": {
+                            "piston_position": {
+                                "type": "Vector {x, y, z}"
+                            },
+                            "block_position": {
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
+                    "minecraft:player_destroyed_block": {
+                        "type": {
+                            "block_position": {
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
+                    "minecraft:player_placed_block": {
+                        "type": {
+                            "block_position": {
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
                     "minecraft:weather_changed": {
                         "type": {
                             "dimension": {
