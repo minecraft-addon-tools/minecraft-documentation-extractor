@@ -12,6 +12,8 @@
             "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "--scripting",
+                "--sort",
+                "--fix",
                 "./Documentation_Scripting.html",
                 "./Documentation_Scripting.json"
             ],

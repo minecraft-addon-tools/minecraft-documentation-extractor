@@ -13,8 +13,11 @@ import {
     isObjectType,
     ArrayType,
     Field,
-    isArrayType
-} from "./index.js";
+    isArrayType,
+    Method,
+    System,
+    ReturnedType
+} from "./index";
 
 const verbose = false;
 
@@ -36,6 +39,17 @@ interface ObjectFieldOverride extends DebugTracking {
     type?: OverrideTypeDefinition;
 }
 
+interface MethodReturnTypeOverride extends DebugTracking {
+    _comment?: string;
+    //default is "change"
+    _operation?: string; //"add" | "remove" | "change" | "discuss";
+
+    description?: string;
+    isArray?: boolean; //default false
+    value?: string;
+    type?: ObjectFieldOverride;// | string;
+}
+
 type OverrideTypeDefinition = ObjectTypeOverride | string | string[];
 
 interface ObjectTypeOverride {
@@ -53,13 +67,43 @@ interface RootElementOverride extends DebugTracking {
     type?: OverrideTypeDefinition;
 }
 
+interface MethodElementOverrideSelector extends DebugTracking {
+    _comment?: string;
+    findByParameters: string[];
+    override: MethodElementOverride;
+}
+
+interface MethodElementOverride extends DebugTracking {
+    _comment?: string;
+    //default is "change"
+    _operation?: string; //"add" | "remove" | "change" | "discuss";
+
+    name?: string;
+    description?: string;
+    category?: string;
+    system?: string; // "Client" | "Server" | "Both";
+    parameters?: ObjectTypeOverride;
+    returnIsArray?: boolean;
+    returnTypes?: OverrideReturnTypeDefinitionSelector[];
+}
+
+interface OverrideReturnTypeDefinitionSelector extends DebugTracking {
+    findByType: string,
+    override: MethodReturnTypeOverride
+}
+
 interface RootElementOverrideSet {
     [key: string]: RootElementOverride;
 }
 
-interface IScriptingDocumentationOverrides {
+interface MethodElementOverrideSet {
+    [key: string]: MethodElementOverride | MethodElementOverrideSelector | (MethodElementOverride | MethodElementOverrideSelector)[];
+}
+
+export interface IScriptingDocumentationOverrides {
     version: Version;
     overrides: {
+        systemMethods?: MethodElementOverrideSet;
         component?: RootElementOverrideSet;
         event: {
             client: {
@@ -75,36 +119,61 @@ interface IScriptingDocumentationOverrides {
 }
 
 const overrideList: IScriptingDocumentationOverrides = cloneDeep(untypedOverrideList);
-const overridesVersion = overrideList.version;
 
 export function applyOverridesToDocumentation(documentation: MinecraftScriptDocumentation) {
     console.log("Applying overrides...");
-    checkDocumentationVersion(documentation.version);
-    documentation.components = overrideTopLevelElement(documentation.components, overrideList.overrides.component);
-    documentation.events.client.listening = overrideTopLevelElement(documentation.events.client.listening, overrideList.overrides.event.client.listening);
-    documentation.events.client.triggerable = overrideTopLevelElement(documentation.events.client.triggerable, overrideList.overrides.event.client.triggerable);
-    documentation.events.server.listening = overrideTopLevelElement(documentation.events.server.listening, overrideList.overrides.event.server.listening);
-    documentation.events.server.triggerable = overrideTopLevelElement(documentation.events.server.triggerable, overrideList.overrides.event.server.triggerable);
-    verifyAllOverridesConsumed();
+    applyOverrides(documentation, overrideList);
 }
 
-function checkDocumentationVersion(documentationVersion: Version | null) {
+export function applyOverrides(documentation: MinecraftScriptDocumentation, overrideDefinitionFile: IScriptingDocumentationOverrides) {
+    const clonedOverrideDefinitionFile = cloneDeep(overrideDefinitionFile);
+    checkDocumentationVersion(documentation.version, clonedOverrideDefinitionFile.version);
+    const overrides = clonedOverrideDefinitionFile.overrides;
+
+    if (overrides.systemMethods) {
+        documentation.systemMethods = overrideMethodElement(documentation.systemMethods, overrides.systemMethods);
+    }
+    if (overrides.component) {
+        documentation.components = overrideTopLevelElement(documentation.components, overrides.component);
+    }
+    if (overrides.event) {
+        if (overrides.event.client) {
+            if (documentation.events.client.listening) {
+                documentation.events.client.listening = overrideTopLevelElement(documentation.events.client.listening, overrides.event.client.listening);
+            }
+            if (overrides.event.client.triggerable) {
+                documentation.events.client.triggerable = overrideTopLevelElement(documentation.events.client.triggerable, overrides.event.client.triggerable);
+            }
+        }
+        if (overrides.event.server) {
+            if (overrides.event.server.listening) {
+                documentation.events.server.listening = overrideTopLevelElement(documentation.events.server.listening, overrides.event.server.listening);
+            }
+            if (overrides.event.server.triggerable) {
+                documentation.events.server.triggerable = overrideTopLevelElement(documentation.events.server.triggerable, overrides.event.server.triggerable);
+            }
+        }
+    }
+    verifyAllOverridesConsumed(clonedOverrideDefinitionFile);
+}
+
+function checkDocumentationVersion(documentationVersion: Version | null, overrideDefinitionVersion: Version) {
     if (documentationVersion == null) {
         console.error("The version number was unable to be extracted from the documentation");
         throw new Error("Documentation version error");
     }
 
-    if (documentationVersion.major !== overridesVersion.major ||
-        documentationVersion.minor !== overridesVersion.minor ||
-        documentationVersion.revision !== overridesVersion.revision ||
-        documentationVersion.build !== overridesVersion.build) {
+    if (documentationVersion.major !== overrideDefinitionVersion.major ||
+        documentationVersion.minor !== overrideDefinitionVersion.minor ||
+        documentationVersion.revision !== overrideDefinitionVersion.revision ||
+        documentationVersion.build !== overrideDefinitionVersion.build) {
         console.error("-----------------------------------------------------------------------------");
         console.error("             The documentation version has been bumped!                      ");
         console.error("You will need to review the overrides to make sure they are still appropriate");
         console.error("          and then bump the version in type-overrides.json                   ");
         console.error("-----------------------------------------------------------------------------");
         console.info(`expected: ${JSON.stringify(overrideList.version)}`);
-        console.info(`actual  : ${JSON.stringify(documentationVersion)}`);
+        console.info(`actual  : ${JSON.stringify(overrideDefinitionVersion)}`);
     }
 }
 
@@ -223,6 +292,243 @@ export function overrideTopLevelElement(originalElements: Component[] | Event[],
     }
 
     return elements;
+}
+
+function isSelector(override: MethodElementOverride | MethodElementOverrideSelector): override is MethodElementOverrideSelector {
+    return (<MethodElementOverrideSelector>override).findByParameters !== undefined
+}
+
+export function overrideMethodElement(originalElements: Method[], overrides?: MethodElementOverrideSet): Method[] {
+    if (!overrides) return originalElements;
+    let fullElementList = cloneDeep(originalElements);
+
+    for (const [name, tempOverride] of Object.entries(overrides)) {
+        verbose && console.log(`element: ${name}`);
+        
+        const overrideList = isArray(tempOverride) ? tempOverride : [tempOverride];
+        for (let override of overrideList) {
+            let elements = fullElementList;
+
+            if (isSelector(override)) {
+                const overrideSelector = override;
+                override = override.override;
+
+                overrideSelector._processed = true;
+                overrideSelector._issues = [];
+                elements = elements.filter(e => {
+                    //If a selector is set, then reduce to exclude any that don't match.
+                    if (e.name !== name) return false;
+                    for (let i = 0; i < overrideSelector.findByParameters.length; i++) {
+                        const parameterName = overrideSelector.findByParameters[i];
+                        if (e.parameters.length < i || e.parameters[i].name !== parameterName) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                
+                if (elements.length === 0) {
+                    overrideSelector._processed = false;
+                    overrideSelector._issues.push(`Attempted to select a method with the name "${name}" but it did not exist`);
+                    continue;
+                }
+            }
+
+            override._processed = false;
+            override._issues = [];
+    
+            if (override._operation === "discuss") {
+                override._issues.push("Element was marked for discussion. No changes are applied, no children are processed");
+    
+            } else if (override._operation === "add") {
+                throw new Error("Add not implemented for system methods");
+    
+            } else if (override._operation === "remove") {
+                const targetElement = elements.find(c => c.name === name);
+                if (targetElement === undefined) {
+                    override._issues.push(`Could not find an element with the name ${name}`);
+
+                } else {
+                    fullElementList = fullElementList.filter(t => t !== targetElement);
+                    override._processed = true;
+                }    
+            } else if (override._operation === "change" || !override._operation) {
+                const targetElement = elements.find(c => c.name === name);
+                if (!targetElement) {
+                    override._issues.push(`Could not find an element with the name ${name}`);
+    
+                } else {
+                    if (override.name !== undefined) {
+                        targetElement.name = override.name;
+                    }
+    
+                    if (override.description !== undefined) {
+                        targetElement.description = override.description;
+                    }
+    
+                    if (override.category !== undefined) {
+                        targetElement.category = override.category;
+                    }
+                    if (override.system !== undefined) {
+                        if (override.system !== "Server" && override.system !== "Client" && override.system !== "Both") {
+                            override._issues.push(`An invalid system was specified in system method ${name}: ${override.system}`);
+                        }
+                        targetElement.system = <System>override.system;
+                    }
+    
+                    if (override.parameters !== undefined) {
+                        for (const [parameterOverrideName, parameterOverride] of Object.entries(override.parameters)) {
+                            parameterOverride._processed = false;
+                            parameterOverride._issues = []
+                            const targetParameter = targetElement.parameters.find(p => p.name === parameterOverrideName)
+                            if (targetParameter === undefined) {
+                                parameterOverride._issues.push(`Could not find parameter with name ${parameterOverrideName}`)
+                                continue;
+                            }
+
+                            if (parameterOverride.name !== undefined) {
+                                targetParameter.name = parameterOverride.name;
+                            }
+                            if (parameterOverride.description !== undefined) {
+                                targetParameter.description = parameterOverride.description;
+                            }
+                            if (parameterOverride.isOptional !== undefined) {
+                                targetParameter.isOptional = parameterOverride.isOptional;
+                            }
+                            if (parameterOverride.defaultValue !== undefined) {
+                                targetParameter.defaultValue = parameterOverride.defaultValue;
+                            }
+                            if (parameterOverride.type !== undefined) {
+                                let convertToArray = parameterOverride.isArray;
+                                let originalArrayType = undefined;
+
+                                if (isArrayType(targetParameter.type)) {
+                                    originalArrayType = targetParameter.type.originalType;
+                                    targetParameter.type = targetParameter.type.type;
+                                    convertToArray = convertToArray === undefined ? true : convertToArray
+                                }
+
+                                targetParameter.type = overrideTypeDefinition(targetParameter.type || "any", parameterOverride.type);
+
+                                if (convertToArray) {
+                                    targetParameter.type = <ArrayType>{
+                                        kind: "array",
+                                        originalType: originalArrayType,
+                                        type: targetParameter.type
+                                    }
+                                }
+                            }
+
+                            parameterOverride._processed = true;
+                        }
+                        //override.parameters
+                    }
+                    if (override.returnTypes !== undefined) {
+                        targetElement.returnTypes = overrideReturnType(targetElement.returnTypes || [], override.returnTypes);
+                    }
+                    if (override.returnIsArray !== undefined) {
+                        throw new Error("Overriding return type as an array on a system method is not currently implemented");
+                    }
+    
+                    override._processed = true;
+                }
+    
+            } else {
+                override._issues.push(`Unexpected operation ${override._operation} for element ${override.name}`);
+            }
+        }
+    }
+
+    return fullElementList;
+}
+
+function overrideReturnType(returnTypes: ReturnedType[], overrideDefinition?: (OverrideReturnTypeDefinitionSelector | MethodReturnTypeOverride)[]): ReturnedType[] {
+    let targetReturnTypes = cloneDeep(returnTypes) || []
+    if (overrideDefinition === undefined) return targetReturnTypes;
+    for (const returnTypeOverride of overrideDefinition) {
+        if (isOverrideReturnTypeDefinitionSelector(returnTypeOverride)) {
+            returnTypeOverride._processed = false;
+            returnTypeOverride._issues = []
+            if (targetReturnTypes === undefined) {
+                returnTypeOverride._issues.push("Return types was empty, there was nothing to select from");
+                continue;
+            }
+
+            function findByType(type: Type, criteria: string): boolean {
+                if (isArrayType(type)) {
+                    return type.originalType === criteria;
+                }
+
+                return type === criteria;
+            }
+
+            const override = returnTypeOverride.override
+
+            const targetReturnType = targetReturnTypes.find(trt => findByType(trt.type, returnTypeOverride.findByType));
+            if (!targetReturnType) {
+                returnTypeOverride._issues.push(`could not find a target return type of ${returnTypeOverride.findByType}`);
+            } else if (override._operation === "remove") {
+                targetReturnTypes = targetReturnTypes.filter(trt => trt !== targetReturnType);
+                override._processed = true;
+            } else if (override._operation === "change" || override._operation === undefined) {
+                if (override.description !== undefined) {
+                    targetReturnType.description = override.description;
+                }
+                if (override.isArray !== undefined) {
+                    targetReturnType.value = override.value;
+                }
+                if (override.type !== undefined) {
+                    let convertToArray = override.isArray;
+                    let originalArrayType = undefined;
+
+                    if (isArrayType(targetReturnType.type)) {
+                        originalArrayType = targetReturnType.type.originalType;
+                        targetReturnType.type = targetReturnType.type.type;
+                        convertToArray = convertToArray === undefined ? true : convertToArray
+                    }
+
+                    const tempType: ObjectType = {
+                        kind: "object",
+                        fields: [
+                            {
+                                name: "return",
+                                description: targetReturnType.description,
+                                type: targetReturnType.type,
+                                defaultValue: targetReturnType.value
+                            }
+                        ]
+                    }
+                    const tempOverride: ObjectTypeOverride = {
+                        "return": override.type
+                    }
+
+                    targetReturnType.type = overrideTypeDefinition(tempType || "any", tempOverride);
+
+                    if (isObjectType(targetReturnType.type)) {
+                        const temp = targetReturnType.type.fields.find(f => f.name === "return");
+                        if (temp) {
+                            targetReturnType.type = temp.type;
+                        }
+                    }
+
+                    if (convertToArray) {
+                        targetReturnType.type = <ArrayType>{
+                            kind: "array",
+                            originalType: originalArrayType,
+                            type: targetReturnType.type
+                        }
+                    }
+                }
+
+                override._processed = true;
+            }
+        }
+    }
+    return targetReturnTypes;
+}
+
+function isOverrideReturnTypeDefinitionSelector(override: (OverrideReturnTypeDefinitionSelector | MethodReturnTypeOverride)): override is OverrideReturnTypeDefinitionSelector {
+    return (<any>override).findByType !== undefined;
 }
 
 export function overrideTypeDefinition(originalType: Type, overrideDefinition?: OverrideTypeDefinition, indent: number = 1): Type {
@@ -357,17 +663,35 @@ export function overrideTypeDefinition(originalType: Type, overrideDefinition?: 
     return type;
 }
 
-export function verifyAllOverridesConsumed() {
-    const checkingOverrides = cloneDeep(overrideList);
-    const allElementsRemoved = [
-        checkingOverrides.overrides.component,
-        checkingOverrides.overrides.event.client.listening,
-        checkingOverrides.overrides.event.client.triggerable,
-        checkingOverrides.overrides.event.server.listening,
-        checkingOverrides.overrides.event.server.triggerable,
-    ].reduce((p, c) => removeProcessedComponents(c) && p, true);
+export function verifyAllOverridesConsumed(overrides: IScriptingDocumentationOverrides) {
+    const checkingOverrides = cloneDeep(overrides.overrides);
+    const elementsToCheck = [];
+    if (checkingOverrides.systemMethods) {
+        elementsToCheck.push(checkingOverrides.systemMethods);
+    }
+    if (checkingOverrides.component) {
+        elementsToCheck.push(checkingOverrides.component);
+    }
+    if (checkingOverrides.event) {
+        if (checkingOverrides.event.client) {
+            if (checkingOverrides.event.client.listening) {
+                elementsToCheck.push(checkingOverrides.event.client.listening);
+            }
+            if (checkingOverrides.event.client.triggerable) {
+                elementsToCheck.push(checkingOverrides.event.client.triggerable);
+            }
+        }
+        if (checkingOverrides.event.server) {
+            if (checkingOverrides.event.server.listening) {
+                elementsToCheck.push(checkingOverrides.event.server.listening);
+            }
+            if (checkingOverrides.event.server.triggerable) {
+                elementsToCheck.push(checkingOverrides.event.server.triggerable);
+            }
+        }
+    }
 
-    delete checkingOverrides.version;
+    const allElementsRemoved = elementsToCheck.reduce((p, c) => removeProcessedComponents(c) && p, true);
     const cleanedOutput = cleanDeep(checkingOverrides, { emptyString: false, nullValues: false });
 
     if (!allElementsRemoved) {
@@ -376,24 +700,28 @@ export function verifyAllOverridesConsumed() {
     }
 }
 
-function removeProcessedComponents(items?: RootElementOverrideSet): boolean {
+function removeProcessedComponents(items?: any): boolean {
     if (!items) return true;
 
     let allItemsTouched = true;
-    for (const [name, item] of Object.entries(items)) {
-        let allChildItemsTouched = true;
-        const typeDefinition = item.type;
-        if (!!typeDefinition && isObjectTypeOverride(typeDefinition)) {
-            allChildItemsTouched = allChildItemsTouched && removeProcessedComponents(typeDefinition);
-        }
-
-        allItemsTouched = allItemsTouched && !!item._processed && allChildItemsTouched;
-
-        if (item._processed) {
-            if (allChildItemsTouched) {
-                delete items[name];
+    
+    if (isObject(items)) {
+        for (const [name, tempItem] of Object.entries(items)) {
+            let allChildItemsTouched = true;
+            let item = <DebugTracking>tempItem;
+            
+            if ((isArray(tempItem) && tempItem.length > 0) || isObject(tempItem)) {
+                allChildItemsTouched = allChildItemsTouched && removeProcessedComponents(tempItem);
             }
-            delete item._processed;
+
+            allItemsTouched = allItemsTouched && allChildItemsTouched && (item._processed === undefined || !!item._processed);
+
+            if (item._processed) {
+                if (allChildItemsTouched) {
+                    delete items[name];
+                }
+                delete item._processed;
+            }
         }
     }
 

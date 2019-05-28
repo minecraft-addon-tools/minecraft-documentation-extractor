@@ -22,6 +22,9 @@ import * as fs from "fs";
 import { extractData, Table, Properties } from "./extractData";
 import { sortComponents, sortFilters, sortEvents } from "./sort";
 import { applyOverridesToDocumentation } from "./overrides";
+import { extractMethods, SourceMethod } from "./extractMethods";
+
+export { applyOverrides, IScriptingDocumentationOverrides } from "./overrides";
 
 export interface Version {
     major: number;
@@ -55,6 +58,12 @@ export interface Field {
     type: Type;
 }
 
+export interface ReturnedType {
+    description: string;
+    type: Type;
+    value?: string;
+}
+
 export type Type = ObjectType | ArrayType | UnionType | string
 
 export function isWellKnownType(type?: Type): type is string {
@@ -79,6 +88,21 @@ export interface Component {
     type?: Type;
 }
 
+export enum System {
+    Client = "Client",
+    Server = "Server",
+    Both = "Both"
+}
+
+export interface Method {
+    name: string;
+    category?: string;
+    description: string;
+    system: System;
+    parameters: Field[];
+    returnTypes?: ReturnedType[];
+}
+
 export interface Event {
     name: string;
     description: string;
@@ -99,6 +123,7 @@ export interface Options {
 
 export interface MinecraftScriptDocumentation {
     version: Version;
+    systemMethods: Method[];
     components: Component[];
     events: {
         client: { listening: Event[], triggerable: Event[] },
@@ -114,12 +139,29 @@ export namespace MinecraftScriptDocumentation {
     export function fromCheerio($: CheerioStatic, options?: Options): MinecraftScriptDocumentation {
         const result: MinecraftScriptDocumentation = {
             version: getVersion($),
+            systemMethods: [],
             components: [],
             events: {
                 client: { listening: [], triggerable: [] },
                 server: { listening: [], triggerable: [] }
             }
         };
+
+        var systemMethodCategories: {[key: string]: string} = {
+            "Entities": "#Entity\\ Bindings",
+            "Components": "#Component\\ Bindings",
+            "Events": "#Event\\ Bindings",
+            "Commands": "#Slash\\ Commands",
+            "Blocks": "#Block\\ Bindings"
+        }
+
+        for (const key in systemMethodCategories) {
+            if (systemMethodCategories.hasOwnProperty(key)) {
+                for (const properties of extractMethods($(systemMethodCategories[key]))) {
+                    result.systemMethods.push(extractMethod(properties, key));
+                }
+            }
+        }
 
         for (const properties of extractData($("#Server\\ Components"))) {
             result.components.push(extractComponent(properties));
@@ -247,6 +289,52 @@ function extractType(table: Table): Type {
             return parameter;
         })
     }
+}
+
+function extractReturnType(table: Table): ReturnedType[] {
+    return table.map(row => {
+            const returnType: ReturnedType = {
+                type: row.cells[0],
+                value: row.cells[1],
+                description: row.cells[row.cells.length - 1] // default value may be missing
+            }
+
+            const arrayTypeCheck = (returnType.type || "").toString().toLocaleLowerCase();
+            if (arrayTypeCheck === "list" || arrayTypeCheck === "array") {
+                returnType.type = <ArrayType>{
+                    kind: "array",
+                    originalType: returnType.type,
+                    type: !!row.nestedTable ? extractType(row.nestedTable) : "any"
+                }
+            } else if (row.nestedTable) {
+                returnType.type = extractType(row.nestedTable);
+            }
+
+            return returnType;
+        });
+}
+
+function extractMethod(properties: SourceMethod, category?: string): Method {
+    let name = properties.name;
+    if (name.indexOf("(") !== -1) {
+        name = name.substring(0, name.indexOf("("));
+    }
+
+    const method: Method = {
+        name: name,
+        description: properties.description,
+        system: System.Both,
+        category: category,
+        parameters: []
+    };
+    if (properties.parameters) {
+        let parametersAsObject = <ObjectType>extractType(properties.parameters)
+        method.parameters = parametersAsObject.fields;
+    }
+    if (properties.returnValues) {
+        method.returnTypes = extractReturnType(properties.returnValues);
+    }
+    return method;
 }
 
 function extractComponent(properties: Properties): Component {

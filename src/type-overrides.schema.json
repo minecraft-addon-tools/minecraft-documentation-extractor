@@ -1,0 +1,199 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "FIXME",
+    "title": "Type Overrides",
+    "description": "Type Overrides for Minecraft Scripting Documentation",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "$schema"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "version": {
+            "$ref": "#/definitions/versionNumber",
+            "description": "The version of minecraft these overrides correspond to"
+        },
+        "overrides": {
+            "additionalProperties": false,
+            "properties": {
+                "systemMethods": {
+                    "patternProperties": {
+                        "^(.+)$": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/systemMethodOverride"
+                                },
+                                {
+                                    "$ref": "#/definitions/systemMethodOverrideSelector"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "component": {
+                    "patternProperties": {
+                        "^minecraft:(.+)$": {
+                            "$ref": "#/definitions/componentOverride"
+                        }
+                    }
+                },
+                "event": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "client": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "listening": {
+                                    "^minecraft:(.+)$": {
+                                        "$ref": "#/definitions/eventOverride"
+                                    }
+                                },
+                                "triggerable": {
+                                    "^minecraft:(.+)$": {
+                                        "$ref": "#/definitions/eventOverride"
+                                    }
+                                }
+                            }
+                        },
+                        "server": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "listening": {
+                                    "^minecraft:(.+)$": {
+                                        "$ref": "#/definitions/eventOverride"
+                                    }
+                                },
+                                "triggerable": {
+                                    "^minecraft:(.+)$": {
+                                        "$ref": "#/definitions/eventOverride"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "versionNumber": {
+            "additionalProperties": false,
+            "required": [
+                "major", "minor", "revision", "build"
+            ],
+            "properties": {
+                "major": { "type": "integer" },
+                "minor": { "type": "integer" },
+                "revision": { "type": "integer" },
+                "build": { "type": "integer" }
+            }
+        },
+        "systemMethodOverrideSelector": {
+            "additionalProperties": false,
+            "required": [
+                "findByParameters",
+                "override"
+            ],
+            "properties": {
+                "findByParameters": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "override": {
+                    "$ref": "#/definitions/systemMethodOverride"
+                }
+            }
+        },
+        "systemMethodOverride": {
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+                "_operation": {
+                    "enum": ["discuss", "add", "remove", "change"],
+                    "default": "change"
+                },
+                "_comment": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "system": {
+                    "enum": ["Server", "Client", "Both"]
+                },
+                "parameters": {
+                    "$ref": "#/definitions/objectDefinition"
+                },
+                "returnTypes": {
+                    "$ref": "#/definitions/returnTypeDefinition"
+                }
+            }
+        },
+        "returnTypeDefinition": {
+            "type": "array",
+            "items": {
+                "additionalProperties": false,
+                "properties": {
+                    "findByType": {
+                        "type": "string"
+                    },
+                    "override": {
+                        "$ref": "#/definitions/objectPropertyOverride"
+                    }
+                }
+            }
+        },
+        "componentOverride": {
+            "$ref": "#/definitions/objectPropertyOverride"
+        },
+        "eventOverride": {
+            "$ref": "#/definitions/objectPropertyOverride"
+        },
+        "objectPropertyOverride": {
+            "additionalProperties": false,
+            "properties": {
+                "_operation": {
+                    "enum": ["discuss", "add", "remove", "change"],
+                    "default": "change"
+                },
+                "_comment": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "default": {
+                    "$comment": "could be anything"
+                },
+                "isArray": { 
+                    "type": "boolean",
+                    "default": false
+                },
+                "isOptional": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "type": { "$ref": "#/definitions/typeDefinition" }
+            }
+        },
+        "typeDefinition": {
+            "anyOf": [
+                { "type": "string" },
+                { "$ref": "#/definitions/objectDefinition" }
+            ]
+        },
+        "objectDefinition": {
+            "patternProperties": {
+                "^(.+)$": { "$ref": "#/definitions/objectPropertyOverride" }
+            }
+        }
+    }
+}

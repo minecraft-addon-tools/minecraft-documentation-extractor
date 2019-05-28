@@ -1,11 +1,71 @@
 {
+    "$schema": "./type-overrides.schema.json",
     "version": {
         "major": 1,
         "minor": 12,
         "revision": 0,
-        "build": 2
+        "build": 4
     },
     "overrides": {
+        "systemMethods": {
+            "executeCommand": {
+                "system": "Server"
+            },
+            "getBlock": {
+                "findByParameters": [
+                    "Ticking Area", "PositionObject"
+                ],
+                "override": {
+                    "parameters": {
+                        "PositionObject": {
+                            "type": "Vector {x, y, z}"
+                        }
+                    }
+                }
+            },
+            "getBlocks": [{
+                "findByParameters": [
+                    "Ticking Area", "Minimum PositionObject", "Maximum PositionObject"
+                ],
+                "override": {
+                    "parameters": {
+                        "Minimum PositionObject": {
+                            "type": "Vector {x, y, z}"
+                        },
+                        "Maximum PositionObject": {
+                            "type": "Vector {x, y, z}"
+                        }
+                    },
+                    "returnTypes": [{
+                        "findByType": "Array",
+                        "override": {
+                            "isArray": true,
+                            "type": {
+                                "isArray": true,
+                                "type": "Block JS API Object"
+                            }
+                        }
+                    }]
+                }
+            },
+            {
+                "findByParameters": [
+                    "Ticking Area", "x min", "y min", "z min", "x max", "y max", "z max"
+                ],
+                "override": {
+                    "returnTypes": [{
+                        "findByType": "Array",
+                        "override": {
+                            "isArray": true,
+                            "type": {
+                                "isArray": true,
+                                "type": "Block JS API Object"
+                            }
+                        }
+                    }]
+                }
+            }]
+        },
         "component": {
             "minecraft:armor_container": {
                 "isArray": true,
