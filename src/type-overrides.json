@@ -441,12 +441,6 @@
                     }
                 },
                 "triggerable": {
-                    "minecraft:display_chat_event": {
-                        "type": "String"
-                    },
-                    "minecraft:execute_command": {
-                        "type": "String"
-                    },
                     "minecraft:spawn_particle_attached_entity": {
                         "type": {
                             "effect": {
