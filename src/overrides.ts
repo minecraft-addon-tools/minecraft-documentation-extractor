@@ -172,8 +172,8 @@ function checkDocumentationVersion(documentationVersion: Version | null, overrid
         console.error("You will need to review the overrides to make sure they are still appropriate");
         console.error("          and then bump the version in type-overrides.json                   ");
         console.error("-----------------------------------------------------------------------------");
-        console.info(`expected: ${JSON.stringify(overrideList.version)}`);
-        console.info(`actual  : ${JSON.stringify(overrideDefinitionVersion)}`);
+        console.info(`expected: ${JSON.stringify(overrideDefinitionVersion)}`);
+        console.info(`actual  : ${JSON.stringify(overrideList.version)}`);
     }
 }
 
