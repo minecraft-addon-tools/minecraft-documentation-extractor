@@ -275,7 +275,7 @@ function extractType(table: Table): Type {
                 description: row.cells[row.cells.length - 1] // default value may be missing
             }
 
-            const arrayTypeCheck = (parameter.type || "").toString().toLocaleLowerCase();
+            const arrayTypeCheck = (parameter.type || "").toString().toLowerCase();
             if (arrayTypeCheck === "list" || arrayTypeCheck === "array") {
                 parameter.type = <ArrayType>{
                     kind: "array",
@@ -299,7 +299,7 @@ function extractReturnType(table: Table): ReturnedType[] {
                 description: row.cells[row.cells.length - 1] // default value may be missing
             }
 
-            const arrayTypeCheck = (returnType.type || "").toString().toLocaleLowerCase();
+            const arrayTypeCheck = (returnType.type || "").toString().toLowerCase();
             if (arrayTypeCheck === "list" || arrayTypeCheck === "array") {
                 returnType.type = <ArrayType>{
                     kind: "array",
