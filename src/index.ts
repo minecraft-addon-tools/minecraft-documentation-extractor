@@ -21,7 +21,7 @@ import * as cheerio from "cheerio";
 import * as fs from "fs";
 import { extractData, Table, Properties } from "./extractData";
 import { sortComponents, sortFilters, sortEvents } from "./sort";
-import { applyOverridesToDocumentation } from "./overrides";
+import { applyDefaultOverrides } from "./overrides";
 import { extractMethods, SourceMethod } from "./extractMethods";
 
 export { applyOverrides, IScriptingDocumentationOverrides } from "./overrides";
@@ -147,7 +147,7 @@ export namespace MinecraftScriptDocumentation {
             }
         };
 
-        var systemMethodCategories: {[key: string]: string} = {
+        const systemMethodCategories: {[key: string]: string} = {
             "Entities": "#Entity\\ Bindings",
             "Components": "#Component\\ Bindings",
             "Events": "#Event\\ Bindings",
@@ -172,7 +172,7 @@ export namespace MinecraftScriptDocumentation {
         extractEvents($(":has(#Server\\ Events) ~ * > #Trigger-able\\ Events").first(), result.events.server.triggerable);
 
         if (options && options.fix) {
-            applyOverridesToDocumentation(result);
+            applyDefaultOverrides(result);
         }
 
         if (options && options.sort) {

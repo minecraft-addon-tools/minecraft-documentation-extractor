@@ -39,7 +39,7 @@ export function* extractMethods(element: Cheerio, topLevelHeadings?: Set<string>
     function next() {
         node = node.next();
         while (isHeading() && node.is(":empty")) { //Methods seem to often have empty headers before the parameters and return types.
-            next();
+            node = node.next();
         }
     }
     function isLinkToTop() {
@@ -96,7 +96,7 @@ function parseTable(table: Cheerio): Table {
                 //Fixes nested parameters and "Return to top" in block documentation
 
                 if (text.indexOf("Back to top") !== -1) {
-                    return $(c).map((i, c) => c.children).filter((i, c) => c.type == "text" || c.type == "br").text().trim();
+                    return $(c).map((i, c) => c.children).filter((i, c) => c.type === "text" || c.type === "br").text().trim();
                 }
                 
                 return text;

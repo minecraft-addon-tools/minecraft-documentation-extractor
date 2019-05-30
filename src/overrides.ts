@@ -139,7 +139,7 @@ export interface IScriptingDocumentationOverrides {
 
 const overrideList: IScriptingDocumentationOverrides = cloneDeep(untypedOverrideList);
 
-export function applyOverridesToDocumentation(documentation: MinecraftScriptDocumentation) {
+export function applyDefaultOverrides(documentation: MinecraftScriptDocumentation) {
     console.log("Applying overrides...");
     applyOverrides(documentation, overrideList);
 }
