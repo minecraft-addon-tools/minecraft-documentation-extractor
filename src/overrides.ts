@@ -191,8 +191,8 @@ function checkDocumentationVersion(documentationVersion: Version | null, overrid
         console.error("You will need to review the overrides to make sure they are still appropriate");
         console.error("          and then bump the version in type-overrides.json                   ");
         console.error("-----------------------------------------------------------------------------");
-        console.info(`expected: ${JSON.stringify(overrideDefinitionVersion)}`);
-        console.info(`actual  : ${JSON.stringify(overrideList.version)}`);
+        console.info(`expected: ${JSON.stringify(documentationVersion)}`);
+        console.info(`actual  : ${JSON.stringify(overrideDefinitionVersion)}`);
     }
 }
 
@@ -488,6 +488,7 @@ function overrideReturnType(returnTypes: ReturnedType[], overrideDefinition?: (O
                 returnTypeOverride._issues.push(`could not find a target return type of ${returnTypeOverride.findByType}`);
             } else if (override._operation === "remove") {
                 targetReturnTypes = targetReturnTypes.filter(trt => trt !== targetReturnType);
+                returnTypeOverride._processed = true;
                 override._processed = true;
             } else if (override._operation === "change" || override._operation === undefined) {
                 if (override.description !== undefined) {
@@ -539,6 +540,7 @@ function overrideReturnType(returnTypes: ReturnedType[], overrideDefinition?: (O
                     }
                 }
 
+                returnTypeOverride._processed = true;
                 override._processed = true;
             }
         }
