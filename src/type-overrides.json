@@ -394,6 +394,13 @@
             },
             "server": {
                 "listening": {
+                    "minecraft:block_interacted_with": {
+                        "type": {
+                            "block_position": {
+                                "type": "Vector {x, y, z}"
+                            }
+                        }
+                    },
                     "minecraft:block_destruction_started": {
                         "type": {
                             "block_position": {
