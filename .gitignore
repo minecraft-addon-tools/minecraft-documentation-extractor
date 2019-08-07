@@ -1,6 +1,8 @@
 out/
 Documentation_*.html
 Documentation_*.json
+Scripting.html
+Scripting.json
 
 # Logs
 logs
