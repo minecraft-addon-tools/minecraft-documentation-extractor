@@ -14,8 +14,8 @@
                 "--scripting",
                 "--sort",
                 "--fix",
-                "./Documentation_Scripting.html",
-                "./Documentation_Scripting.json"
+                "./Scripting.html",
+                "./Scripting.json"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
