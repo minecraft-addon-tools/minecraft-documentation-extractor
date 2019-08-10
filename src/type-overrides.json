@@ -71,6 +71,10 @@
                 "isArray": true,
                 "type": "ItemStack JS API Object"
             },
+            "minecraft:container": {
+                "isArray": true,
+                "type": "ItemStack JS API Object"
+            },
             "minecraft:damage_sensor": {
                 "type": {
                     "triggers": {
@@ -258,6 +262,9 @@
                         "isOptional": true
                     }
                 }
+            },
+            "minecraft:tag": {
+                "type": "any"
             }
         },
         "event": {
